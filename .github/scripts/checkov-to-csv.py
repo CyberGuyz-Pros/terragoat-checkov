@@ -234,16 +234,21 @@ def save_to_excel(findings, output_file):
             df.to_excel(writer, sheet_name='Security Findings', index=False)
             
             # Summary sheet
+            severity_counts = {}
+            for finding in findings:
+                severity = finding.get('severity', 'UNKNOWN')
+                severity_counts[severity] = severity_counts.get(severity, 0) + 1
+            
             summary_data = {
                 'Metric': ['Total Issues', 'Critical', 'High', 'Medium', 'Low', 'Files Affected', 'Categories Affected'],
                 'Count': [
                     len(findings),
-                    len([f for f in findings if f['severity'] == 'CRITICAL']),
-                    len([f for f in findings if f['severity'] == 'HIGH']),
-                    len([f for f in findings if f['severity'] == 'MEDIUM']),
-                    len([f for f in findings if f['severity'] == 'LOW']),
-                    len(set(f['file_path'] for f in findings)),
-                    len(set(f['category'] for f in findings))
+                    severity_counts.get('CRITICAL', 0),
+                    severity_counts.get('HIGH', 0),
+                    severity_counts.get('MEDIUM', 0),
+                    severity_counts.get('LOW', 0),
+                    len(set(f.get('file_path', 'N/A') for f in findings if f.get('file_path', 'N/A') != 'N/A')),
+                    len(set(f.get('category', 'UNKNOWN') for f in findings))
                 ]
             }
             
@@ -253,12 +258,13 @@ def save_to_excel(findings, output_file):
             # Category breakdown
             category_counts = {}
             for finding in findings:
-                cat = finding['category']
+                cat = finding.get('category', 'UNKNOWN')
                 category_counts[cat] = category_counts.get(cat, 0) + 1
             
-            category_df = pd.DataFrame(list(category_counts.items()), columns=['Category', 'Count'])
-            category_df = category_df.sort_values('Count', ascending=False)
-            category_df.to_excel(writer, sheet_name='Categories', index=False)
+            if category_counts:
+                category_df = pd.DataFrame(list(category_counts.items()), columns=['Category', 'Count'])
+                category_df = category_df.sort_values('Count', ascending=False)
+                category_df.to_excel(writer, sheet_name='Categories', index=False)
         
         print(f"✅ Excel report saved: {output_file}")
         return True
@@ -282,54 +288,81 @@ def main():
     print("-" * 50)
     
     # Ensure output directory exists
-    os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+    try:
+        os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+    except Exception as e:
+        print(f"⚠️ Warning: Could not create output directory: {e}")
     
     # Load Checkov report
     checkov_data = load_checkov_report(input_json)
     if not checkov_data:
-        sys.exit(1)
-    
-    # Extract findings
-    findings = extract_security_findings(checkov_data)
-    
-    if not findings:
-        print("✅ No security issues found! Creating empty report...")
-        # Create empty report with headers
-        empty_finding = {
+        print("❌ Failed to load Checkov report, creating minimal report...")
+        # Create minimal report even if JSON is missing
+        findings = [{
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'status': 'NO_ISSUES',
-            'check_id': 'N/A',
-            'check_name': 'No security issues found',
-            'check_type': 'N/A',
-            'severity': 'INFO',
-            'category': 'SUMMARY',
-            'file_path': scan_target,
+            'status': 'ERROR',
+            'check_id': 'SCAN_ERROR',
+            'check_name': 'Failed to load scan results',
+            'check_type': 'SYSTEM',
+            'severity': 'ERROR',
+            'category': 'SYSTEM',
+            'file_path': input_json,
             'file_line_range': 'N/A',
             'resource_type': 'N/A',
             'resource_name': 'N/A',
-            'description': 'All security checks passed',
-            'guideline': 'N/A',
+            'description': 'Could not load Checkov JSON report',
+            'guideline': 'Check workflow logs for Checkov scan errors',
             'fix_definition': 'N/A',
             'code_block': 'N/A',
             'compliance_frameworks': 'N/A'
-        }
-        findings = [empty_finding]
+        }]
+    else:
+        # Extract findings
+        findings = extract_security_findings(checkov_data)
+        
+        if not findings:
+            print("✅ No security issues found! Creating success report...")
+            # Create success report
+            findings = [{
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'status': 'NO_ISSUES',
+                'check_id': 'SCAN_SUCCESS',
+                'check_name': 'No security issues found',
+                'check_type': 'SUMMARY',
+                'severity': 'INFO',
+                'category': 'SUMMARY',
+                'file_path': scan_target,
+                'file_line_range': 'N/A',
+                'resource_type': 'N/A',
+                'resource_name': 'N/A',
+                'description': 'All security checks passed successfully',
+                'guideline': 'N/A',
+                'fix_definition': 'N/A',
+                'code_block': 'N/A',
+                'compliance_frameworks': 'N/A'
+            }]
     
     # Save reports
     csv_success = save_to_csv(findings, output_csv)
-    excel_success = save_to_excel(findings, output_excel)
+    
+    try:
+        excel_success = save_to_excel(findings, output_excel)
+    except Exception as e:
+        print(f"⚠️ Warning: Could not create Excel report: {e}")
+        excel_success = False
     
     if csv_success:
         print(f"📋 CSV Report Details:")
         print(f"   • Total findings: {len(findings)}")
-        print(f"   • File size: {os.path.getsize(output_csv)} bytes")
+        if os.path.exists(output_csv):
+            print(f"   • File size: {os.path.getsize(output_csv)} bytes")
     
-    if excel_success:
+    if excel_success and os.path.exists(output_excel):
         print(f"📊 Excel Report Details:")
         print(f"   • File size: {os.path.getsize(output_excel)} bytes")
         print(f"   • Sheets: Security Findings, Summary, Categories")
     
-    print("\n🎉 Report conversion completed successfully!")
+    print("\n🎉 Report conversion completed!")
 
 if __name__ == "__main__":
     main()
