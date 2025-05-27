@@ -86,17 +86,4 @@ enable-secret-scan-all-files: true
 #     comment: "Approved exception - legacy system requirement"
 
 # Azure resource type priorities for scanning
-azure-resource-types:
-  - azurerm_storage_account
-  - azurerm_key_vault
-  - azurerm_kubernetes_cluster
-  - azurerm_app_service
-  - azurerm_sql_server
-  - azurerm_sql_database
-  - azurerm_network_security_group
-  - azurerm_virtual_machine
-  - azurerm_application_gateway
-  - azurerm_cosmosdb_account
-  - azurerm_mssql_server
-  - azurerm_postgresql_server
-  - azurerm_mysql_server
+
