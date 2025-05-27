@@ -1,0 +1,102 @@
+# .checkov.yml - Azure Terraform Security Configuration
+# Place this file in your repository root
+
+# Frameworks to scan
+framework:
+  - terraform
+
+# Directories to scan (adjust based on your structure)
+directory:
+  - terraform/azure
+
+# Directories to skip
+skip-path:
+  - .terraform/
+  - terraform/modules/
+  - .git/
+  - node_modules/
+  - __pycache__/
+
+# Azure-specific checks to skip (uncomment if needed)
+skip-check:
+  # Storage Account checks - uncomment if you have legacy storage accounts
+  # - CKV_AZURE_1    # Ensure that 'Secure transfer required' is set to 'Enabled'
+  # - CKV_AZURE_3    # Ensure that 'Public access level' is set to Private for blob containers
+  # - CKV_AZURE_33   # Ensure Storage logging is enabled for Queue service for read, write and delete requests
+  
+  # Key Vault checks - uncomment if you have specific requirements
+  # - CKV_AZURE_42   # Ensure the key vault is recoverable
+  # - CKV_AZURE_8    # Ensure that the expiration date is set on all keys
+  
+  # AKS checks - uncomment if you have specific AKS requirements
+  # - CKV_AZURE_4    # Ensure AKS logging to Azure Monitoring is Configured
+  # - CKV_AZURE_5    # Ensure RBAC is enabled on AKS clusters
+  # - CKV_AZURE_6    # Ensure that the AKS cluster has Network Policy configured
+  # - CKV_AZURE_7    # Ensure AKS cluster is created with Private cluster enabled
+  
+  # App Service checks - uncomment if you have legacy app services
+  # - CKV_AZURE_13   # Ensure App Service Authentication is set on Azure App Service
+  # - CKV_AZURE_14   # Ensure web app redirects all HTTP traffic to HTTPS in Azure App Service
+  # - CKV_AZURE_15   # Ensure web app is using the latest version of TLS encryption
+  # - CKV_AZURE_16   # Ensure that Register with Azure Active Directory is enabled on App Service
+  # - CKV_AZURE_17   # Ensure the web app has 'Client Certificates (Incoming client certificates)' set to 'On'
+  # - CKV_AZURE_18   # Ensure that 'HTTP Version' is the latest if used to run the web app
+
+# Only run specific Azure checks (uncomment to use)
+# check:
+#   - CKV_AZURE_*
+
+# Output configuration
+output: cli
+quiet: false
+compact: false
+log-level: INFO
+
+# External modules
+download-external-modules: true
+
+# Soft fail - set to true during initial setup to avoid breaking builds
+soft-fail: false
+
+# Enable secret scanning
+enable-secret-scan-all-files: true
+
+# Custom policies directory (create if you have custom rules)
+# external-checks-dir: ./.checkov/custom-policies
+
+# Baseline file to track accepted risks (will be created after first run)
+# baseline: .checkov.baseline
+
+# Azure-specific severity thresholds
+# Only fail on high and critical issues (uncomment to enable)
+# check-severity: HIGH
+
+# Compliance frameworks to check against
+# framework-filter: 
+#   - CIS
+#   - AZURE_CIS
+#   - SOC2
+#   - PCI
+
+# Suppress specific resource findings (example format)
+# suppress:
+#   - id: CKV_AZURE_1
+#     file_path: terraform/azure/storage.tf
+#     resource: azurerm_storage_account.example
+#     comment: "Approved exception - legacy system requirement"
+
+# Azure resource type priorities for scanning
+azure-resource-types:
+  - azurerm_storage_account
+  - azurerm_key_vault
+  - azurerm_kubernetes_cluster
+  - azurerm_app_service
+  - azurerm_sql_server
+  - azurerm_sql_database
+  - azurerm_network_security_group
+  - azurerm_virtual_machine
+  - azurerm_application_gateway
+  - azurerm_cosmosdb_account
+  - azurerm_mssql_server
+  - azurerm_postgresql_server
+  - azurerm_mysql_server
