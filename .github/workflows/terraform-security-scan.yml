@@ -48,12 +48,12 @@ jobs:
       with:
         directory: ${{ env.TERRAFORM_DIR }}
         framework: terraform
-        output_format: json,cli,github_failed_only
+        output_format: json,cli
         output_file_path: ${{ env.REPORTS_DIR }}/checkov-raw-report.json
         soft_fail: true  # Don't fail the build, just report
         download_external_modules: true
         log_level: INFO
-        compact: false
+        config_file: .checkov.yml
         # Skip specific checks if needed (uncomment and modify as needed)
         # skip_check: CKV_AZURE_1,CKV_AZURE_2
         
